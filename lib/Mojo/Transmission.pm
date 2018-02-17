@@ -7,6 +7,8 @@ use Mojo::Util qw(dumper url_escape);
 
 use constant DEBUG => $ENV{MOJO_TRANSMISSION_DEBUG} || 0;
 
+our $VERSION = '0.01';
+
 has default_trackers => sub { [] };
 has ua               => sub { Mojo::UserAgent->new; };
 has url =>
