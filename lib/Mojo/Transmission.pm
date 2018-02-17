@@ -4,6 +4,7 @@ use Mojo::Base -base;
 use Mojo::JSON;
 use Mojo::UserAgent;
 use Mojo::Util qw(dumper url_escape);
+
 use constant DEBUG => $ENV{MOJO_TRANSMISSION_DEBUG} || 0;
 
 has default_trackers => sub { [] };
@@ -22,7 +23,7 @@ sub add {
   }
 
   unless ($url) {
-    $url .= sprintf 'magnet:?xt=urn:btih:%s', $args->{hash} // '';
+    $url = sprintf 'magnet:?xt=urn:btih:%s', $args->{hash} // '';
     $url .= sprintf '&dn=%s', url_escape($args->{dn} // '');
     $url .= sprintf '&tr=%s', url_escape $_ for @{$args->{tr} || $self->default_trackers};
   }
@@ -42,9 +43,7 @@ sub session {
 
 sub stats {
   my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
-  my $self = shift;
-
-  return $self->_post('session-stats', {}, $cb);
+  return shift->_post('session-stats', {}, $cb);
 }
 
 sub torrent {
@@ -140,7 +139,12 @@ Mojo::Transmission - Client for talking with Transmission BitTorrent daemon
 
 =head1 DESCRIPTION
 
-See also L<https://trac.transmissionbt.com/browser/trunk/extras/rpc-spec.txt>.
+L<Mojo::Transmission> is a very lightweight client for exchanging data with
+the Transmission BitTorrent daemon using RPC.
+
+The documentation in this module might seem sparse, but that is because the API
+is completely transparent regarding the data-structure received from the
+L<Transmission API|https://trac.transmissionbt.com/browser/trunk/extras/rpc-spec.txt>.
 
 =head1 SYNOPSIS
 
@@ -157,28 +161,40 @@ See also L<https://trac.transmissionbt.com/browser/trunk/extras/rpc-spec.txt>.
   $array_ref = $self->default_trackers;
   $self = $self->default_trackers([$url, ...]);
 
+Holds a list of default trackers that can be used by L</add>.
+
 =head2 ua
 
   $ua = $self->ua;
+  $self = $self->ua(Mojo::UserAgent->new);
 
 Holds a L<Mojo::UserAgent> used to issue requests to backend.
 
 =head2 url
 
   $url = $self->url;
+  $self = $self->url(Mojo::URL->new);
 
 L<Mojo::URL> object holding the URL to the transmission daemon.
-Default to C<$ENV{TRANSMISSION_RPC_URL}> or
+Default to the C<TRANSMISSION_RPC_URL> environment variable or
 "http://localhost:9091/transmission/rpc".
 
 =head1 METHODS
 
 =head2 add
 
-  $self = $self->add(
-            {hash => "...", dn => "Some description", tr => ["trackers"]},
-            sub { my ($self, $res) = @_; }
-          );
+  # Generic call
+  $res = $self->add(\%args);
+  $self = $self->add(\%args, sub { my ($self, $res) = @_ });
+
+  # magnet:?xt=${xt}&dn=${dn}&tr=${tr}
+  $self->add({xt => "...", dn => "...", tr => [...]});
+
+  # magnet:?xt=urn:btih:${hash}&dn=${dn}&tr=${tr}
+  $self->add({hash => "...", dn => "...", tr => [...]});
+
+  # Custom URL or file
+  $self->add({url => "...", tr => [...]});
 
 This method can be used to add a torrent. C<tr> defaults to L</default_trackers>.
 
@@ -188,9 +204,11 @@ See also L<https://trac.transmissionbt.com/browser/trunk/extras/rpc-spec.txt#L35
 
   # session-get
   $self = $self->session([], sub { my ($self, $res) = @_; });
+  $res = $self->session([]);
 
   # session-set
   $self = $self->session(\%attrs, sub { my ($self, $res) = @_; });
+  $res = $self->session(\%attrs);
 
 Used to get or set Transmission session arguments.
 
@@ -200,6 +218,7 @@ See also L<https://trac.transmissionbt.com/browser/trunk/extras/rpc-spec.txt#L44
 
   # session-stats
   $self = $self->stats(sub { my ($self, $res) = @_; });
+  $res = $self->stats;
 
 Used to retrieve Transmission statistics.
 
@@ -209,19 +228,25 @@ See also L<https://trac.transmissionbt.com/browser/trunk/extras/rpc-spec.txt#L53
 
   # torrent-get
   $self = $self->torrent(\@attrs, $id, sub { my ($self, $res) = @_; });
+  $res = $self->torrent(\@attrs, $id);
 
   # torrent-set
   $self = $self->torrent(\%attrs, $id, sub { my ($self, $res) = @_; });
+  $res = $self->torrent(\%attrs, $id);
 
   # torrent-$action
-  $self = $self->torrent(remove => $id, sub { my ($self, $res) = @_; });
-  $self = $self->torrent(start => $id, sub { my ($self, $res) = @_; });
-  $self = $self->torrent(stop => $id, sub { my ($self, $res) = @_; });
+  $self = $self->torrent(remove  => $id, sub { my ($self, $res) = @_; });
+  $self = $self->torrent(start   => $id, sub { my ($self, $res) = @_; });
+  $self = $self->torrent(stop    => $id, sub { my ($self, $res) = @_; });
+  $res  = $self->torrent($action => $id);
 
   # torrent-remove + delete-local-data
   $self = $self->torrent(purge => $id, sub { my ($self, $res) = @_; });
 
 Used to get or set torrent related attributes or execute an action on a torrent.
+
+C<$id> can either be a scalar or an array-ref, referring to which torrents to
+use.
 
 See also:
 
