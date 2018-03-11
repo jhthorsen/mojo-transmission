@@ -8,7 +8,7 @@ use Mojo::Util qw(dumper url_escape);
 
 use constant DEBUG => $ENV{MOJO_TRANSMISSION_DEBUG} || 0;
 
-our $VERSION   = '0.01';
+our $VERSION   = '0.02';
 our @EXPORT_OK = qw(tr_status);
 
 has default_trackers => sub { [] };
