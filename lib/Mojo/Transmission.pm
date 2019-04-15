@@ -6,7 +6,8 @@ use Mojo::JSON;
 use Mojo::UserAgent;
 use Mojo::Util qw(dumper url_escape);
 
-use constant DEBUG => $ENV{MOJO_TRANSMISSION_DEBUG} || 0;
+use constant DEBUG          => $ENV{MOJO_TRANSMISSION_DEBUG} || 0;
+use constant RETURN_PROMISE => sub { };
 
 our $VERSION   = '0.02';
 our @EXPORT_OK = qw(tr_status);
@@ -35,8 +36,10 @@ sub add {
   $self->_post('torrent-add', {filename => "$url"}, $cb);
 }
 
+sub add_p { shift->add(shift, RETURN_PROMISE) }
+
 sub session {
-  my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
+  my $cb   = ref $_[-1] eq 'CODE' ? pop : undef;
   my $self = shift;
 
   return $self->_post('session-get', $_[0], $cb) if ref $_[0] eq 'ARRAY';
@@ -45,10 +48,14 @@ sub session {
   die 'Invalid input.';
 }
 
+sub session_p { shift->session(shift, RETURN_PROMISE) }
+
 sub stats {
   my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
   return shift->_post('session-stats', {}, $cb);
 }
+
+sub stats_p { shift->_post('session-stats', {}, RETURN_PROMISE) }
 
 sub torrent {
   my $cb = ref $_[-1] eq 'CODE' ? pop : undef;
@@ -75,37 +82,38 @@ sub torrent {
   return $self->_post("torrent-$args", {ids => $id}, $cb);
 }
 
+sub torrent_p { shift->torrent(@_, RETURN_PROMISE) }
+
+sub _done {
+  my ($self, $cb, $res) = @_;
+  $self->$cb($res) unless $cb eq RETURN_PROMISE;
+  return $res;
+}
+
 sub _post {
   my ($self, $method, $req, $cb) = @_;
-
   $req = {arguments => $req, method => $method};
 
-  # non-blocking
+  # Non-Blocking
   if ($cb) {
-    Mojo::IOLoop->delay(
-      sub {
-        my ($delay) = @_;
-        warn '[TRANSMISSION] <<< ', dumper($req), "\n" if DEBUG;
-        $self->ua->post($self->url, $self->_headers, json => $req, $delay->begin);
-      },
-      sub {
-        my ($delay, $tx) = @_;
-        warn '[TRANSMISSION] >>> ', dumper($tx->res->json || $tx->res->error), "\n" if DEBUG;
-        return $self->$cb(_res($tx)) unless ($tx->res->code // 0) == 409;
-        $self->{session_id} = $tx->res->headers->header('X-Transmission-Session-Id');
-        $self->ua->post($self->url, $self->_headers, json => $req, $delay->begin);
-      },
-      sub {
-        my ($delay, $tx) = @_;
-        warn '[TRANSMISSION] >>> ', dumper($tx->res->json || $tx->res->error), "\n" if DEBUG;
-        $self->$cb(_res($tx));
-      },
-    );
+    warn '[TRANSMISSION] <<< ', dumper($req), "\n" if DEBUG;
+    my $p = $self->ua->post_p($self->url, $self->_headers, json => $req)->then(sub {
+      my $tx = shift;
+      warn '[TRANSMISSION] >>> ', dumper($tx->res->json || $tx->res->error), "\n" if DEBUG;
+      return $self->_done($cb, _res($tx)) unless ($tx->res->code // 0) == 409;
+      $self->{session_id} = $tx->res->headers->header('X-Transmission-Session-Id');
+      return $self->ua->post_p($self->url, $self->_headers, json => $req);
+    })->then(sub {
+      return $_[0] if ref $_[0] eq 'HASH';    # _done() is already called
+      my $tx = shift;
+      warn '[TRANSMISSION] >>> ', dumper($tx->res->json || $tx->res->error), "\n" if DEBUG;
+      return $self->_done($cb, _res($tx));
+    });
 
-    return $self;
+    return $cb eq RETURN_PROMISE ? $p : $self;
   }
 
-  # blocking
+  # Blocking
   else {
     warn '[TRANSMISSION] <<< ', dumper($req), "\n" if DEBUG;
     my $tx = $self->ua->post($self->url, $self->_headers, json => $req);
@@ -204,6 +212,12 @@ This method can be used to add a torrent. C<tr> defaults to L</default_trackers>
 
 See also L<https://trac.transmissionbt.com/browser/trunk/extras/rpc-spec.txt#L356>.
 
+=head2 add_p
+
+  $promise = $self->add_p(\%args);
+
+Same as L</add>, but returns a promise.
+
 =head2 session
 
   # session-get
@@ -218,6 +232,13 @@ Used to get or set Transmission session arguments.
 
 See also L<https://trac.transmissionbt.com/browser/trunk/extras/rpc-spec.txt#L444>.
 
+=head2 session_p
+
+  $promise = $self->session_p([]);
+  $promise = $self->session_p(\%args);
+
+Same as L</session>, but returns a promise.
+
 =head2 stats
 
   # session-stats
@@ -225,6 +246,12 @@ See also L<https://trac.transmissionbt.com/browser/trunk/extras/rpc-spec.txt#L44
   $res = $self->stats;
 
 Used to retrieve Transmission statistics.
+
+=head2 stats_p
+
+  $promise = $self->stats_p;
+
+Same as L</stats>, but returns a promise.
 
 See also L<https://trac.transmissionbt.com/browser/trunk/extras/rpc-spec.txt#L531>.
 
@@ -269,6 +296,14 @@ L<https://trac.transmissionbt.com/browser/trunk/extras/rpc-spec.txt#L90>
 L<https://trac.transmissionbt.com/browser/trunk/extras/rpc-spec.txt#L71>.
 
 =back
+
+=head2 torrent_p
+
+  $promise = $self->torrent_p(\@attrs, ...);
+  $promise = $self->torrent_p(\%attrs, ...);
+  $promise = $self->torrent_p($action => ...);
+
+Same as L</torrent>, but returns a promise.
 
 =head1 FUNCTIONS
 
