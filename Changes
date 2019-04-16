@@ -1,6 +1,6 @@
 Revision history for perl distribution Mojo-Transmission
 
-0.03 Not Released
+0.03 2019-04-16T21:41:48+0700
  - Add mojo-transmission executable
  - Add support for promises
 

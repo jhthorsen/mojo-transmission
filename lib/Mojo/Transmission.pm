@@ -9,7 +9,7 @@ use Mojo::Util qw(dumper url_escape);
 use constant DEBUG          => $ENV{TRANSMISSION_DEBUG} || 0;
 use constant RETURN_PROMISE => sub { };
 
-our $VERSION   = '0.02';
+our $VERSION   = '0.03';
 our @EXPORT_OK = qw(tr_status);
 
 has default_trackers => sub { [split /,/, ($ENV{TRANSMISSION_DEFAULT_TRACKERS} || '')] };
