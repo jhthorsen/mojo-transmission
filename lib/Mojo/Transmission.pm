@@ -78,8 +78,9 @@ sub torrent {
     return $self->_post('torrent-remove', {ids => $id, 'delete-local-data' => Mojo::JSON->true},
       $cb);
   }
-
-  return $self->_post("torrent-$args", {ids => $id}, $cb);
+  else {
+    return $self->_post("torrent-$args", {ids => $id}, $cb);
+  }
 }
 
 sub torrent_p { shift->torrent(@_, RETURN_PROMISE) }
