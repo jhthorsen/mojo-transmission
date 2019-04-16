@@ -1,12 +1,11 @@
 #!/usr/bin/env perl
 use Applify;
 use Mojo::Util;
-use lib 'lib';
 
 documentation __FILE__;
 
-option string => url => 'URL to Transmission server', $ENV{TRANSMISSION_RPC_URL};
-option string => trackers => 'URL to trackers', n_of => '@';
+option string => url      => 'URL to Transmission server', $ENV{TRANSMISSION_RPC_URL};
+option string => trackers => 'URL to trackers',            n_of => '@';
 
 sub t {
   my $self = shift;
@@ -14,7 +13,7 @@ sub t {
     require Mojo::Transmission;
     Mojo::Transmission->new(
       default_trackers => $self->trackers || [split /,/, $ENV{TRANSMISSION_DEFAULT_TRACKERS}],
-      url => $self->url,
+      url              => $self->url,
     );
   };
 }
@@ -46,7 +45,7 @@ sub action_t {
   my @ids = _ids(defined $id ? $id : '');
 
   return $self->_call(torrent => [@args], [@ids]) unless my %kv = _kv(@args);
-  return $self->_call(torrent => \%kv, [@ids]);
+  return $self->_call(torrent => \%kv,    [@ids]);
 }
 
 sub _call {

@@ -6,13 +6,13 @@ use Mojo::JSON;
 use Mojo::UserAgent;
 use Mojo::Util qw(dumper url_escape);
 
-use constant DEBUG          => $ENV{MOJO_TRANSMISSION_DEBUG} || 0;
+use constant DEBUG          => $ENV{TRANSMISSION_DEBUG} || 0;
 use constant RETURN_PROMISE => sub { };
 
 our $VERSION   = '0.02';
 our @EXPORT_OK = qw(tr_status);
 
-has default_trackers => sub { [] };
+has default_trackers => sub { [split /,/, ($ENV{TRANSMISSION_DEFAULT_TRACKERS} || '')] };
 has ua               => sub { Mojo::UserAgent->new; };
 has url =>
   sub { Mojo::URL->new($ENV{TRANSMISSION_RPC_URL} || 'http://localhost:9091/transmission/rpc'); };
