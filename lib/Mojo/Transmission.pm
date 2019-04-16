@@ -160,32 +160,32 @@ L<Transmission API|https://trac.transmissionbt.com/browser/trunk/extras/rpc-spec
 
 =head1 SYNOPSIS
 
-  my $t = Mojo::Transmission->new;
-  $t->add(url => "http://releases.ubuntu.com/17.10/ubuntu-17.10.1-desktop-amd64.iso.torrent");
+  my $transmission = Mojo::Transmission->new;
+  $transmission->add(url => "http://releases.ubuntu.com/17.10/ubuntu-17.10.1-desktop-amd64.iso.torrent");
 
-  my $torrents = $t->torrent([]);
-  $t->torrent(remove => $torrents[0]->{id}) if @$torrents;
+  my $torrents = $transmission->torrent([]);
+  $transmission->torrent(remove => $torrents[0]->{id}) if @$torrents;
 
 =head1 ATTRIBUTES
 
 =head2 default_trackers
 
-  $array_ref = $self->default_trackers;
-  $self = $self->default_trackers([$url, ...]);
+  $array_ref    = $transmission->default_trackers;
+  $transmission = $transmission->default_trackers([$url, ...]);
 
 Holds a list of default trackers that can be used by L</add>.
 
 =head2 ua
 
-  $ua = $self->ua;
-  $self = $self->ua(Mojo::UserAgent->new);
+  $ua           = $transmission->ua;
+  $transmission = $transmission->ua(Mojo::UserAgent->new);
 
 Holds a L<Mojo::UserAgent> used to issue requests to backend.
 
 =head2 url
 
-  $url = $self->url;
-  $self = $self->url(Mojo::URL->new);
+  $url          = $transmission->url;
+  $transmission = $transmission->url(Mojo::URL->new);
 
 L<Mojo::URL> object holding the URL to the transmission daemon.
 Default to the C<TRANSMISSION_RPC_URL> environment variable or
@@ -196,17 +196,17 @@ Default to the C<TRANSMISSION_RPC_URL> environment variable or
 =head2 add
 
   # Generic call
-  $res = $self->add(\%args);
-  $self = $self->add(\%args, sub { my ($self, $res) = @_ });
+  $res          = $transmission->add(\%args);
+  $transmission = $transmission->add(\%args, sub { my ($transmission, $res) = @_ });
 
   # magnet:?xt=${xt}&dn=${dn}&tr=${tr}
-  $self->add({xt => "...", dn => "...", tr => [...]});
+  $transmission->add({xt => "...", dn => "...", tr => [...]});
 
   # magnet:?xt=urn:btih:${hash}&dn=${dn}&tr=${tr}
-  $self->add({hash => "...", dn => "...", tr => [...]});
+  $transmission->add({hash => "...", dn => "...", tr => [...]});
 
   # Custom URL or file
-  $self->add({url => "...", tr => [...]});
+  $transmission->add({url => "...", tr => [...]});
 
 This method can be used to add a torrent. C<tr> defaults to L</default_trackers>.
 
@@ -214,19 +214,19 @@ See also L<https://trac.transmissionbt.com/browser/trunk/extras/rpc-spec.txt#L35
 
 =head2 add_p
 
-  $promise = $self->add_p(\%args);
+  $promise = $transmission->add_p(\%args);
 
 Same as L</add>, but returns a promise.
 
 =head2 session
 
   # session-get
-  $self = $self->session([], sub { my ($self, $res) = @_; });
-  $res = $self->session([]);
+  $transmission = $transmission->session([], sub { my ($transmission, $res) = @_; });
+  $res          = $transmission->session([]);
 
   # session-set
-  $self = $self->session(\%attrs, sub { my ($self, $res) = @_; });
-  $res = $self->session(\%attrs);
+  $transmission = $transmission->session(\%attrs, sub { my ($transmission, $res) = @_; });
+  $res          = $transmission->session(\%attrs);
 
 Used to get or set Transmission session arguments.
 
@@ -234,22 +234,22 @@ See also L<https://trac.transmissionbt.com/browser/trunk/extras/rpc-spec.txt#L44
 
 =head2 session_p
 
-  $promise = $self->session_p([]);
-  $promise = $self->session_p(\%args);
+  $promise = $transmission->session_p([]);
+  $promise = $transmission->session_p(\%args);
 
 Same as L</session>, but returns a promise.
 
 =head2 stats
 
   # session-stats
-  $self = $self->stats(sub { my ($self, $res) = @_; });
-  $res = $self->stats;
+  $transmission = $transmission->stats(sub { my ($transmission, $res) = @_; });
+  $res          = $transmission->stats;
 
 Used to retrieve Transmission statistics.
 
 =head2 stats_p
 
-  $promise = $self->stats_p;
+  $promise = $transmission->stats_p;
 
 Same as L</stats>, but returns a promise.
 
@@ -258,21 +258,21 @@ See also L<https://trac.transmissionbt.com/browser/trunk/extras/rpc-spec.txt#L53
 =head2 torrent
 
   # torrent-get
-  $self = $self->torrent(\@attrs, $id, sub { my ($self, $res) = @_; });
-  $res = $self->torrent(\@attrs, $id);
+  $transmission = $transmission->torrent(\@attrs, $id, sub { my ($transmission, $res) = @_; });
+  $res          = $transmission->torrent(\@attrs, $id);
 
   # torrent-set
-  $self = $self->torrent(\%attrs, $id, sub { my ($self, $res) = @_; });
-  $res = $self->torrent(\%attrs, $id);
+  $transmission = $transmission->torrent(\%attrs, $id, sub { my ($transmission, $res) = @_; });
+  $res          = $transmission->torrent(\%attrs, $id);
 
   # torrent-$action
-  $self = $self->torrent(remove  => $id, sub { my ($self, $res) = @_; });
-  $self = $self->torrent(start   => $id, sub { my ($self, $res) = @_; });
-  $self = $self->torrent(stop    => $id, sub { my ($self, $res) = @_; });
-  $res  = $self->torrent($action => $id);
+  $transmission = $transmission->torrent(remove  => $id, sub { my ($transmission, $res) = @_; });
+  $transmission = $transmission->torrent(start   => $id, sub { my ($transmission, $res) = @_; });
+  $transmission = $transmission->torrent(stop    => $id, sub { my ($transmission, $res) = @_; });
+  $res          = $transmission->torrent($action => $id);
 
   # torrent-remove + delete-local-data
-  $self = $self->torrent(purge => $id, sub { my ($self, $res) = @_; });
+  $transmission = $transmission->torrent(purge => $id, sub { my ($transmission, $res) = @_; });
 
 Used to get or set torrent related attributes or execute an action on a torrent.
 
@@ -299,9 +299,9 @@ L<https://trac.transmissionbt.com/browser/trunk/extras/rpc-spec.txt#L71>.
 
 =head2 torrent_p
 
-  $promise = $self->torrent_p(\@attrs, ...);
-  $promise = $self->torrent_p(\%attrs, ...);
-  $promise = $self->torrent_p($action => ...);
+  $promise = $transmission->torrent_p(\@attrs, ...);
+  $promise = $transmission->torrent_p(\%attrs, ...);
+  $promise = $transmission->torrent_p($action => ...);
 
 Same as L</torrent>, but returns a promise.
 
